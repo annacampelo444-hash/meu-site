@@ -1,1 +1,62 @@
 
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meu Assistente Pessoal</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; max-width: 600px; margin: 20px auto; padding: 20px; background-color: #f4f6f9; }
+    h2 { color: #333; text-align: center; }
+    #chat { border: 1px solid #ddd; height: 350px; overflow-y: auto; padding: 15px; margin-bottom: 15px; border-radius: 10px; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+    .msg-user { margin: 8px 0; text-align: right; color: #007aff; }
+    .msg-ia { margin: 8px 0; text-align: left; color: #333; background: #e9e9eb; padding: 8px 12px; border-radius: 12px; display: inline-block; }
+    .input-box { display: flex; gap: 10px; }
+    input { flex: 1; padding: 12px; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; }
+    button { padding: 12px 20px; background-color: #007aff; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h2>Meu Assistente Pessoal</h2>
+  <div id="chat"></div>
+  <div class="input-box">
+    <input type="text" id="pergunta" placeholder="Digite sua dúvida...">
+    <button onclick="enviar()">Enviar</button>
+  </div>
+
+  <script>
+    const API_KEY = "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";
+
+    async function enviar() {
+      const campo = document.getElementById("pergunta");
+      const chat = document.getElementById("chat");
+      const texto = campo.value.trim();
+      if (!texto) return;
+
+      chat.innerHTML += `<div class="msg-user"><b>Você:</b> ${texto}</div>`;
+      campo.value = "";
+
+      try {
+        const resposta = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${API_KEY}`
+          },
+          body: JSON.stringify({
+            model: "llama-3.3-70b-versatile",
+            messages: [{ role: "user", content: texto }]
+          })
+        });
+
+        const dados = await resposta.json();
+        const respostaIA = dados.choices[0].message.content;
+        chat.innerHTML += `<div class="msg-ia"><b>IA:</b> ${respostaIA}</div>`;
+        chat.scrollTop = chat.scrollHeight;
+      } catch (erro) {
+        chat.innerHTML += `<div style="color:red; margin:8px 0;"><b>Erro:</b> Não foi possível conectar.</div>`;
+      }
+    }
+  </script>
+</body>
+</html>
