@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -10,38 +9,68 @@
     h2 { color: #333; text-align: center; }
     #chat { border: 1px solid #ddd; height: 350px; overflow-y: auto; padding: 15px; margin-bottom: 15px; border-radius: 10px; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
     .msg-user { margin: 8px 0; text-align: right; color: #007aff; }
-    .msg-ia { margin: 8px 0; text-align: left; color: #333; background: #e9e9eb; padding: 8px 12px; border-radius: 12px; display: inline-block; }
-    .input-box { display: flex; gap: 10px; }
+    .msg-ia { margin: 8px 0; text-align: left; color: #333; background: #e9e9eb; padding: 8px 12px; border-radius: 10px; display: inline-block; }
+    .input-box { display: flex; gap: 10px; margin-top: 10px; }
     input { flex: 1; padding: 12px; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; }
-    button { padding: 12px 20px; background-color: #007aff; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; }
+    button { padding: 12px 20px; background-color: #007aff; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+    .key-box { background: #fff3cd; border: 1px solid #ffeeba; padding: 10px; border-radius: 8px; margin-bottom: 15px; }
   </style>
 </head>
 <body>
+
   <h2>Meu Assistente Pessoal</h2>
+
+  <div class="key-box">
+    <label style="font-size: 12px; color: #856404; font-weight: bold;">Sua Groq API Key:</label>
+    <div class="input-box">
+      <input type="password" id="apiKeyInput" placeholder="Cole sua chave gsk_... aqui">
+      <button onclick="salvarChave()" style="background-color: #28a745;">Salvar</button>
+    </div>
+  </div>
+
   <div id="chat"></div>
+
   <div class="input-box">
     <input type="text" id="pergunta" placeholder="Digite sua dúvida...">
     <button onclick="enviar()">Enviar</button>
   </div>
 
   <script>
-    const API_KEY = "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";
+    // Carrega a chave salva previamente no navegador
+    document.getElementById("apiKeyInput").value = localStorage.getItem("GROQ_KEY") || "";
+
+    function salvarChave() {
+      const key = document.getElementById("apiKeyInput").value.trim();
+      if (key) {
+        localStorage.setItem("GROQ_KEY", key);
+        alert("Chave salva com sucesso no navegador!");
+      } else {
+        alert("Por favor, cole uma chave válida.");
+      }
+    }
 
     async function enviar() {
+      const apiKey = localStorage.getItem("GROQ_KEY") || document.getElementById("apiKeyInput").value.trim();
       const campo = document.getElementById("pergunta");
       const chat = document.getElementById("chat");
       const texto = campo.value.trim();
+
       if (!texto) return;
+      if (!apiKey) {
+        alert("Cole sua API Key do Groq no campo amarelo e clique em Salvar!");
+        return;
+      }
 
       chat.innerHTML += `<div class="msg-user"><b>Você:</b> ${texto}</div>`;
       campo.value = "";
+      chat.scrollTop = chat.scrollHeight;
 
       try {
         const resposta = await fetch("https://api.groq.com/openai/v1/chat/completions", {
           method: "POST",
           headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${API_KEY}`
+            "Authorization": `Bearer ${apiKey}`,
+            "Content-Type": "application/json"
           },
           body: JSON.stringify({
             model: "llama-3.3-70b-versatile",
@@ -50,13 +79,19 @@
         });
 
         const dados = await resposta.json();
-        const respostaIA = dados.choices[0].message.content;
-        chat.innerHTML += `<div class="msg-ia"><b>IA:</b> ${respostaIA}</div>`;
-        chat.scrollTop = chat.scrollHeight;
-      } catch (erro) {
-        chat.innerHTML += `<div style="color:red; margin:8px 0;"><b>Erro:</b> Não foi possível conectar.</div>`;
+        
+        if (dados.error) {
+          chat.innerHTML += `<div class="msg-ia" style="color: red;"><b>Erro:</b> ${dados.error.message}</div>`;
+        } else {
+          const textoIA = dados.choices[0].message.content;
+          chat.innerHTML += `<div class="msg-ia"><b>IA:</b> ${textoIA}</div>`;
+        }
+      } catch (e) {
+        chat.innerHTML += `<div class="msg-ia" style="color: red;">Erro ao se conectar com a API. Verifique a chave inserida.</div>`;
       }
+      chat.scrollTop = chat.scrollHeight;
     }
   </script>
+
 </body>
 </html>
